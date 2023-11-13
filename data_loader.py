@@ -6,6 +6,8 @@ def load_data(dataset_name):
         dataset = Planetoid(root='/tmp/Cora', name='Cora', transform=NormalizeFeatures())
     elif dataset_name == 'Reddit':
         dataset = Reddit(root='/tmp/Reddit')
+    elif dataset_name == 'Hellaswag':
+        pass
     # Add other datasets as needed
 
     data = dataset[0]
