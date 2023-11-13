@@ -1,0 +1,1 @@
+python main.py --dataset_type graph --dataset_name Cora --lr 0.001 --patience 50 --epochs 500

@@ -7,6 +7,8 @@ from train import train_model
 from test import test_model
 from data_loader import load_data
 from plot import plot_losses, plot_accuracies
+from BERT_feature_extraction import initialize_bert, extract_embeddings
+from graph_operations import create_graph, visualize_graph, save_graph_data
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -17,29 +19,39 @@ def parse_args():
     parser = argparse.ArgumentParser(description="GCN for different datasets")
     parser.add_argument('--dataset_type', type=str, required=True, choices=['graph', 'text'], help='Type of the dataset (graph or text)')
     parser.add_argument('--dataset_name', type=str, help='Name of the graph dataset (e.g., Cora, Reddit)')
-    parser.add_argument('--file_path', type=str, help='File path for the text dataset')
+    parser.add_argument('--file_path', type=str, default='C:\\Users\\fiona\\Master Thesis\\Attack_Graph\\data\\combined_hellaswag.json', help='File path for the text dataset')
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--patience', type=int, default=40, help='Patience for early stopping')
     parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train')
+    parser.add_argument('--threshold', type=float, default=0.88, help='Threshold for edge creation based on cosine similarity')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     return parser.parse_args()
 
 def main():
     args = parse_args()
-    set_seed(args.seed)  # Set the seed
+    set_seed(args.seed)
 
     # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
 
-    # Load data based on the dataset type
-    if args.dataset_type == 'graph':
+    if args.dataset_type == 'text':
+        # Load data from the new combined JSON file
+        data_list = load_data(dataset_type='text', file_path=args.file_path)
+        
+        tokenizer, model = initialize_bert()
+        embeddings = extract_embeddings(data_list, tokenizer, model)
+
+        G, label_encoder = create_graph(data_list, embeddings, args.threshold)
+        visualize_graph(G)
+        save_graph_data(G)
+
+    # Handle 'graph' dataset_type...
+    elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
-    elif args.dataset_type == 'text':
-        data = load_data(dataset_type='text', file_path=args.file_path)
-        dataset = None  # For text datasets, there might not be a 'dataset' object
+
     else:
         raise ValueError("Invalid dataset type specified")
-
+    
     log_filename = f'logs/{args.dataset_name}_training_result.log'
     train_losses, val_losses, val_accuracies = train_model(data, dataset, args.lr, args.patience, args.epochs, log_filename)
     

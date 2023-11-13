@@ -12,8 +12,12 @@ def load_graph_data(dataset_name):
     return data, dataset
 
 def load_text_data(file_path):
-    with open(file_path, 'r') as file:
-        data_list = json.load(file)
+    with open(file_path, 'rb') as file:  # Open in binary mode
+        content = file.read()
+        try:
+            data_list = json.loads(content.decode('utf-8'))  # Try decoding as utf-8
+        except UnicodeDecodeError:
+            data_list = json.loads(content.decode('cp1252'))  # Fallback to cp1252 if utf-8 fails
     return data_list
 
 def load_data(dataset_type, dataset_name=None, file_path=None):
