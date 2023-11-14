@@ -5,10 +5,11 @@ import random
 import numpy as np
 from train import train_model
 from test import test_model
-from data_loader import load_data
+from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
 from graph_operations import create_graph, visualize_graph, save_graph_data
+
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -19,7 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="GCN for different datasets")
     parser.add_argument('--dataset_type', type=str, required=True, choices=['graph', 'text'], help='Type of the dataset (graph or text)')
     parser.add_argument('--dataset_name', type=str, help='Name of the graph dataset (e.g., Cora, Reddit)')
-    parser.add_argument('--file_path', type=str, default='C:\\Users\\fiona\\Master Thesis\\Attack_Graph\\data\\combined_hellaswag.json', help='File path for the text dataset')
+    parser.add_argument('--file_path', type=str, default='data/combined_hellaswag.json', help='File path for the text dataset')
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--patience', type=int, default=40, help='Patience for early stopping')
     parser.add_argument('--epochs', type=int, default=500, help='Number of epochs to train')
@@ -36,7 +37,13 @@ def main():
 
     if args.dataset_type == 'text':
         # Load data from the new combined JSON file
-        data_list = load_data(dataset_type='text', file_path=args.file_path)
+        file_path = args.file_path
+        output_file = 'data/mixed_train.json'
+        selected_labels = ['Making a sandwich', 'Disc dog', 'Surfing', 'Scuba diving', 'Fixing bicycle']
+
+        # Filter and save Hellaswag data
+        data_list = filter_and_save_hellaswag(file_path, output_file, selected_labels)
+
         
         tokenizer, model = initialize_bert()
         embeddings = extract_embeddings(data_list, tokenizer, model)

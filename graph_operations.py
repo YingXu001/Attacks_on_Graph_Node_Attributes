@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 from sklearn.decomposition import PCA
+from tqdm import tqdm
 import scipy.sparse as sp
 import torch
 import random
@@ -14,24 +15,23 @@ def create_graph(data_list, node_embeddings, threshold):
     label_encoder.fit(all_labels)
     encoded_labels = label_encoder.transform(all_labels)
 
-    for i, embedding in enumerate(node_embeddings):
+    for i, embedding in enumerate(tqdm(node_embeddings, desc="Creating graph")):
         G.add_node(i, label=encoded_labels[i], feature_embedding=embedding.numpy())
         for j in range(i):
             cosine_similarity = torch.nn.functional.cosine_similarity(embedding, node_embeddings[j], dim=0)
             if cosine_similarity > threshold:
                 G.add_edge(j, i)
 
-    # Add random edge for isolated nodes
-    for node in G.nodes():
-        if len(list(G.neighbors(node))) == 0:
+        # Add random edge for isolated nodes
+        if len(list(G.neighbors(i))) == 0:
             random_neighbor = random.choice(list(G.nodes()))
-            while random_neighbor == node:
+            while random_neighbor == i:
                 random_neighbor = random.choice(list(G.nodes()))
-            G.add_edge(node, random_neighbor)
+            G.add_edge(i, random_neighbor)
 
-    return G, label_encoder
+    return G, label_encoder 
 
-def visualize_graph(G):
+def visualize_graph(G, file_path='plots/graph_visualization.png'):
     # Get the labels of the nodes
     labels_dict = nx.get_node_attributes(G, 'label')
     nodes_list = list(G.nodes())
@@ -62,4 +62,4 @@ def save_graph_data(G):
 
     attr_matrix_sparse = sp.csr_matrix(attr_matrix)
 
-    np.savez('mixed_graph.npz', adj_data=adj_matrix.data, adj_indices=adj_matrix.indices, adj_indptr=adj_matrix.indptr, adj_shape=adj_matrix.shape, attr_data=attr_matrix_sparse.data, attr_indices=attr_matrix_sparse.indices, attr_indptr=attr_matrix_sparse.indptr, attr_shape=attr_matrix_sparse.shape, labels=labels)
+    np.savez('data/mixed_graph.npz', adj_data=adj_matrix.data, adj_indices=adj_matrix.indices, adj_indptr=adj_matrix.indptr, adj_shape=adj_matrix.shape, attr_data=attr_matrix_sparse.data, attr_indices=attr_matrix_sparse.indices, attr_indptr=attr_matrix_sparse.indptr, attr_shape=attr_matrix_sparse.shape, labels=labels)

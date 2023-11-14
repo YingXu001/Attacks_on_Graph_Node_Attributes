@@ -1,3 +1,4 @@
+import os
 import json
 from collections import Counter
 
@@ -34,15 +35,19 @@ def save_data(data, file_path):
 # Example usage
 if __name__ == '__main__':
     file_path = 'data/hellaswag/hellaswag_train.jsonl'
-    output_file = 'data/mixed_train.json'
+    output_file = 'data/mixed_data.json'
     selected_labels = ['Making a sandwich', 'Disc dog', 'Surfing', 'Scuba diving', 'Fixing bicycle']
 
-    data_list = load_data(file_path)
-    activity_labels = count_activity_labels(data_list)
-    word_freqs = count_word_frequencies(data_list)
-    mini_train_data = create_subset(data_list, selected_labels)
-    save_data(mini_train_data, output_file)
+    # Check if the output file already exists
+    if not os.path.exists(output_file):
+        data_list = load_data(file_path)
+        activity_labels = count_activity_labels(data_list)
+        word_freqs = count_word_frequencies(data_list)
+        mini_train_data = create_subset(data_list, selected_labels)
+        save_data(mini_train_data, output_file)
 
-    # Print activity labels and word frequencies
-    print("Activity Label Frequencies:", activity_labels)
-    print("Word Frequencies:", word_freqs)
+        # Print activity labels and word frequencies
+        print("Activity Label Frequencies:", activity_labels)
+        print("Word Frequencies:", word_freqs)
+    else:
+        print(f"File '{output_file}' already exists. Skipping regeneration.")

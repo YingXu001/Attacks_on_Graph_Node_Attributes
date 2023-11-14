@@ -27,3 +27,19 @@ def load_data(dataset_type, dataset_name=None, file_path=None):
         return load_text_data(file_path)
     else:
         raise ValueError(f"Unsupported dataset type: {dataset_type}")
+    
+def filter_and_save_hellaswag(file_path, output_file, selected_labels):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        data_list = json.load(file)  # Load the entire JSON file
+
+    mini_train_data = [data for data in data_list if data.get('activity_label') in selected_labels]
+
+    print(f"Selected {len(mini_train_data)} items.")
+
+    for i, item in enumerate(mini_train_data):
+        item['ind'] = i
+
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        json.dump(mini_train_data, outfile, indent=4)
+
+    return mini_train_data
