@@ -78,17 +78,20 @@ def main():
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
         test_loss, test_accuracy = test_model(data, num_features, num_classes)
 
-            
-    # Handle 'graph' dataset_type...
     elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
-        log_filename = f'logs/{args.dataset_name}_training_result.log'
-        train_losses, val_losses, val_accuracies = train_model(data, dataset, args.lr, args.patience, args.epochs, log_filename)
+
+        # Extract number of features and classes
+        num_features = dataset.num_features
+        num_classes = dataset.num_classes
+
+        # Call train_model with the correct arguments
+        train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
 
         plot_losses(train_losses, val_losses, args.dataset_name)
         plot_accuracies(val_accuracies, args.dataset_name)
 
-        test_loss, test_accuracy = test_model(data, dataset)
+        test_loss, test_accuracy = test_model(data, num_features, num_classes)
 
     else:
         raise ValueError("Invalid dataset type specified")
