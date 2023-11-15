@@ -46,7 +46,9 @@ def visualize_graph(G, file_path='plots/graph_visualization.png'):
         plt.scatter(embedding[0], embedding[1], color=label_to_color[labels_list[i]])
     plt.show()
 
-def save_graph_data(G):
+def save_graph_data(G, graph_file):
+    graph_file = 'data/mixed_graph.npz'
+    
     adj_matrix = nx.adjacency_matrix(G)
 
     attr_matrix_list = [G.nodes[node]['feature_embedding'] for node in G.nodes()]
@@ -56,12 +58,29 @@ def save_graph_data(G):
 
     attr_matrix_sparse = sp.csr_matrix(attr_matrix)
 
+    num_nodes = len(G.nodes())
+
+    # Create masks for training, validation, and testing
+    train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+    test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+    # Populate these masks with your logic. Here's a simple random split example:
+    num_train = int(num_nodes * 0.8)  # 80% of data for training
+    num_val = int(num_nodes * 0.1)    # 10% of data for validation
+
+    indices = torch.randperm(num_nodes)
+    train_mask[indices[:num_train]] = True
+    val_mask[indices[num_train:num_train + num_val]] = True
+    test_mask[indices[num_train + num_val:]] = True
+
+    # Save everything to a file
     np.savez('data/mixed_graph.npz', 
              adj_data=adj_matrix.data, adj_indices=adj_matrix.indices,
              adj_indptr=adj_matrix.indptr, adj_shape=adj_matrix.shape,
              attr_data=attr_matrix_sparse.data, attr_indices=attr_matrix_sparse.indices,
              attr_indptr=attr_matrix_sparse.indptr, attr_shape=attr_matrix_sparse.shape,
-             labels=labels)
+             labels=labels, train_mask=train_mask.numpy(), val_mask=val_mask.numpy(), test_mask=test_mask.numpy())
 
 def load_graph_data(graph_file):
     # Load data from the .npz file
@@ -88,8 +107,12 @@ def load_graph_data(graph_file):
     # Get labels and convert them to a PyTorch tensor
     labels = torch.tensor(data['labels'], dtype=torch.long)
 
-    # Create a PyTorch Geometric Data object
-    torch_data = Data(x=x, edge_index=edge_index, y=labels)
+    # Load masks
+    train_mask = torch.tensor(data['train_mask'], dtype=torch.bool)
+    val_mask = torch.tensor(data['val_mask'], dtype=torch.bool)
+    test_mask = torch.tensor(data['test_mask'], dtype=torch.bool)
 
+    # Create a PyTorch Geometric Data object including the masks
+    torch_data = Data(x=x, edge_index=edge_index, y=labels, train_mask=train_mask, val_mask=val_mask, test_mask=test_mask)
 
     return torch_data

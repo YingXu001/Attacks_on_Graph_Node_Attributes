@@ -65,7 +65,7 @@ def main():
             tokenizer, model = initialize_bert()
             embeddings = extract_embeddings(data_list, tokenizer, model)
             G, label_encoder = create_graph(data_list, embeddings, args.threshold)
-            visualize_graph(G)
+            # visualize_graph(G)
             save_graph_data(G, graph_file)  # Assuming save_graph_data saves the graph to mixed_graph.npz
         else:
             print(f"File '{graph_file}' found. Starting modeling.")
@@ -76,25 +76,31 @@ def main():
         num_classes = len(torch.unique(data.y)) # Determine the number of classes from your data
 
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
+        test_loss, test_accuracy = test_model(data, num_features, num_classes)
+
             
     # Handle 'graph' dataset_type...
     elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
+        log_filename = f'logs/{args.dataset_name}_training_result.log'
+        train_losses, val_losses, val_accuracies = train_model(data, dataset, args.lr, args.patience, args.epochs, log_filename)
+
+        plot_losses(train_losses, val_losses, args.dataset_name)
+        plot_accuracies(val_accuracies, args.dataset_name)
+
+        test_loss, test_accuracy = test_model(data, dataset)
 
     else:
         raise ValueError("Invalid dataset type specified")
     
-    log_filename = f'logs/{args.dataset_name}_training_result.log'
-    train_losses, val_losses, val_accuracies = train_model(data, dataset, args.lr, args.patience, args.epochs, log_filename)
-    
-    plot_losses(train_losses, val_losses, args.dataset_name)
-    plot_accuracies(val_accuracies, args.dataset_name)
 
-    test_loss, test_accuracy = test_model(data, dataset)
 
-    # Save results to log
-    with open(f'{args.dataset_name}_testing_result.log', 'w') as log_file:
-        log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+    print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+
+
+    # # Save results to log
+    # with open(f'{args.dataset_name}_testing_result.log', 'w') as log_file:
+    #     log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
 if __name__ == "__main__":
     main()

@@ -30,43 +30,44 @@ def train_model(data, num_features, num_classes, lr, patience, epochs):
     val_losses = []
     val_accuracies = []
 
-    with open(log_filename, 'w') as log_file:
-        for epoch in range(epochs):
-            model.train()
-            optimizer.zero_grad()
+    # with open(log_filename, 'w') as log_file:
+    for epoch in range(epochs):
+        model.train()
+        optimizer.zero_grad()
 
-            out = model(data)
+        out = model(data)
 
-            loss = criterion(out[train_nodes], train_labels)
-            train_losses.append(loss.item())
+        loss = criterion(out[train_nodes], train_labels)
+        train_losses.append(loss.item())
 
-            loss.backward()
-            optimizer.step()
+        loss.backward()
+        optimizer.step()
 
-            # Validation
-            model.eval()
-            with torch.no_grad():
-                val_out = model(data)
-                val_loss = criterion(val_out[val_nodes], val_labels)
-                _, preds = torch.max(val_out[val_nodes], 1)
-                acc = accuracy_score(val_labels.cpu().numpy(), preds.cpu().numpy())
+        # Validation
+        model.eval()
+        with torch.no_grad():
+            val_out = model(data)
+            val_loss = criterion(val_out[val_nodes], val_labels)
+            _, preds = torch.max(val_out[val_nodes], 1)
+            acc = accuracy_score(val_labels.cpu().numpy(), preds.cpu().numpy())
 
-            val_losses.append(val_loss.item())
-            val_accuracies.append(acc)
+        val_losses.append(val_loss.item())
+        val_accuracies.append(acc)
 
-            log_file.write(f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n')
+        # log_file.write(f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n')
+        print((f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n'))
 
-            # Early stopping
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                counter = 0
-                model_path = os.path.join(model_dir, 'best_model.pth')
-                torch.save(model.state_dict(), model_path)
-            else:
-                counter += 1
-                if counter >= patience:
-                    print("Early stopping")
-                    break
+        # Early stopping
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            counter = 0
+            model_path = os.path.join(model_dir, 'best_model.pth')
+            torch.save(model.state_dict(), model_path)
+        else:
+            counter += 1
+            if counter >= patience:
+                print("Early stopping")
+                break
 
     # You might also want to return or store the training statistics like losses and accuracies
     return train_losses, val_losses, val_accuracies
