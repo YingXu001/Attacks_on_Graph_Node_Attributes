@@ -9,8 +9,9 @@ from model import GCN
 model_dir = 'model'
 os.makedirs(model_dir, exist_ok=True)
 
-def train_model(data, dataset, lr, patience, epochs, log_filename):
-    model = GCN(dataset.num_features, dataset.num_classes)
+def train_model(data, num_features, num_classes, lr, patience, epochs):
+    # model = GCN(dataset.num_features, dataset.num_classes)
+    model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss()
 
