@@ -55,7 +55,7 @@ def train_model(data, num_features, num_classes, lr, patience, epochs):
         val_accuracies.append(acc)
 
         # log_file.write(f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n')
-        print((f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n'))
+        # print((f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n'))
 
         # Early stopping
         if val_loss < best_val_loss:

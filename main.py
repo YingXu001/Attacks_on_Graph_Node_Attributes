@@ -11,7 +11,8 @@ from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
 from graph_operations import create_graph, visualize_graph, save_graph_data, load_graph_data
-
+from AttackGraph.PGD import pgd_attack
+from model import GCN
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -29,6 +30,8 @@ def parse_args():
     parser.add_argument('--threshold', type=float, default=0.88, help='Threshold for edge creation based on cosine similarity')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--norm_type', type=str, default='Linf', choices=['Linf', 'L2', 'L1'], help='Type of norm for PGD attack')
+    parser.add_argument('--apply_attack', action='store_true', help='Apply an attack during training')
+    parser.add_argument('--attack_type', type=str, default='decision_time', choices=['decision_time', 'poisoning'], help='Type of attack to apply')
     return parser.parse_args()
 
 def main():
@@ -71,12 +74,26 @@ def main():
             print(f"File '{graph_file}' found. Starting modeling.")
             data = load_graph_data(graph_file)
         
-        # Assuming 'data' is a PyTorch Geometric Data object
+        # Load data
+        data = load_graph_data(graph_file)
+        
+        # Initialize model
         num_features = data.num_node_features
-        num_classes = len(torch.unique(data.y)) # Determine the number of classes from your data
+        num_classes = len(torch.unique(data.y))
+        model = GCN(num_features, num_classes)
 
+        # Apply attack if specified
+        if args.apply_attack and args.attack_type == 'decision_time':
+            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type)
+
+        # Train the model
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
+
+        # Testing phase should be outside the if-else block for the attack
         test_loss, test_accuracy = test_model(data, num_features, num_classes)
+
+        print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+
 
     elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
@@ -84,6 +101,9 @@ def main():
         # Extract number of features and classes
         num_features = dataset.num_features
         num_classes = dataset.num_classes
+
+        if args.apply_attack and args.attack_type == 'decision_time':
+            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type)
 
         # Call train_model with the correct arguments
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
