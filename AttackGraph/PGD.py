@@ -49,6 +49,7 @@ def pgd_attack(model, data, epsilon, alpha, num_iter, norm_type, criterion, labe
                 perturbations = alpha * data.x.grad.sign()
                 data.x = data.x + perturbations
                 difference = data.x - original_node_features
+                
                 data.x = original_node_features + difference.renorm(p=1, dim=0, maxnorm=epsilon)
 
             # Ensure that node features stay valid (e.g., between certain range)

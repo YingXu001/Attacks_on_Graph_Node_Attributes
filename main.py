@@ -82,9 +82,14 @@ def main():
         num_classes = len(torch.unique(data.y))
         model = GCN(num_features, num_classes)
 
+        criterion = torch.nn.CrossEntropyLoss()
+
+        train_nodes = torch.where(data.train_mask)[0]
+        labels = data.y[train_nodes]
+
         # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
-            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type)
+            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
         # Train the model
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
