@@ -19,5 +19,21 @@ def test_model(data, num_features, num_classes, model_path='model/best_model.pth
         _, preds = torch.max(out[test_nodes], 1)
         acc = accuracy_score(test_labels.cpu().numpy(), preds.cpu().numpy())
 
-    print(f'Test Loss: {test_loss.item()}, Accuracy: {acc}')
     return test_loss.item(), acc
+
+
+def test_model_under_attack(model, data, test_nodes, criterion, epsilon, alpha, num_iter, norm_type):
+    model.eval()
+
+    test_data = apply_pgd_attack_to_test_data(model, data, epsilon, alpha, num_iter, norm_type)
+
+    with torch.no_grad():
+        # Forward pass
+        out = model(test_data)
+
+        test_loss = criterion(out[test_nodes], test_data.y[test_nodes])
+        _, preds = torch.max(out[test_nodes], 1)
+        acc = accuracy_score(test_data.y[test_nodes].cpu().numpy(), preds.cpu().numpy())
+
+    return test_loss.item(), acc
+

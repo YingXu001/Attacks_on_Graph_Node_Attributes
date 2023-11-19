@@ -67,6 +67,7 @@ def train_model(data, num_features, num_classes, lr, patience, epochs):
             counter += 1
             if counter >= patience:
                 print("Early stopping")
+                print((f'Epoch: {epoch+1}, Val Loss: {val_loss.item()}, Accuracy: {acc}\n'))
                 break
 
     # You might also want to return or store the training statistics like losses and accuracies

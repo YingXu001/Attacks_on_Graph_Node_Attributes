@@ -48,7 +48,7 @@ def main():
 
         if not os.path.exists(output_file):
             print(f"File '{output_file}' not found. Starting data processing.")
-            # logging.info(f"File '{output_file}' not found. Starting data processing.")
+            logging.info(f"File '{output_file}' not found. Starting data processing.")
             file_path = args.file_path
             # selected_labels = ['Making a sandwich', 'Disc dog', 'Surfing', 'Scuba diving', 'Fixing bicycle']
             selected_labels = ['Scuba diving', 'Making a sandwich', 'Disc dog', 'Fixing bicycle']
@@ -81,23 +81,20 @@ def main():
         num_features = data.num_node_features
         num_classes = len(torch.unique(data.y))
         model = GCN(num_features, num_classes)
-
         criterion = torch.nn.CrossEntropyLoss()
 
+        labels = data.y
+
         train_nodes = torch.where(data.train_mask)[0]
-        labels = data.y[train_nodes]
+        train_labels = data.y[train_nodes]
 
         # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
             data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
-        # Train the model
-        train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
-
-        # Testing phase should be outside the if-else block for the attack
-        test_loss, test_accuracy = test_model(data, num_features, num_classes)
-
-        print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+        else:
+            train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
+            test_loss, test_accuracy = test_model(data, num_features, num_classes)
 
 
     elif args.dataset_type == 'graph':
@@ -107,28 +104,27 @@ def main():
         num_features = dataset.num_features
         num_classes = dataset.num_classes
 
+        # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
-            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type)
+            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=500, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
-        # Call train_model with the correct arguments
+        # Train the model
         train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
 
         plot_losses(train_losses, val_losses, args.dataset_name)
         plot_accuracies(val_accuracies, args.dataset_name)
 
+        # Testing phase
         test_loss, test_accuracy = test_model(data, num_features, num_classes)
 
     else:
         raise ValueError("Invalid dataset type specified")
-    
-
 
     print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
-
-    # # Save results to log
-    # with open(f'{args.dataset_name}_testing_result.log', 'w') as log_file:
-    #     log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+    # Save results to log
+    with open(f'{args.dataset_name}_testing_result.log', 'w') as log_file:
+        log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
 if __name__ == "__main__":
     main()
