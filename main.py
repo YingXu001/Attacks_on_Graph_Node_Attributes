@@ -6,12 +6,13 @@ import json
 import logging
 import numpy as np
 from train import train_model
-from test import test_model
+from test import test_model, test_model_under_pgd_attack
 from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
 from graph_operations import create_graph, visualize_graph, save_graph_data, load_graph_data
 from AttackGraph.PGD import pgd_attack
+from AttackGraph.AddRandomNoise import add_random_noise
 from model import GCN
 
 def set_seed(seed):
@@ -57,7 +58,7 @@ def main():
             data_list = filter_and_save_hellaswag(file_path, output_file, selected_labels)
 
         else:
-            # logging.info(f"File '{output_file}' found. Skipping data processing.")
+            logging.info(f"File '{output_file}' found. Skipping data processing.")
             print(f"File '{output_file}' found. Skipping data processing.")
             # Load the existing data
             with open(output_file, 'r', encoding='utf-8') as file:
@@ -88,13 +89,35 @@ def main():
         train_nodes = torch.where(data.train_mask)[0]
         train_labels = data.y[train_nodes]
 
+        ########################### old version #################################
         # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
             data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
+        elif args.apply_attack and args.attack_type == 'poisoning':
+            # Assuming G is your original graph
+            G_prime = add_random_noise(G, epsilon=0.01)  # Customize epsilon as needed
+
+            # Assuming you have a function to convert G_prime to PyTorch Geometric Data
+            data = convert_to_torch_geometric_data(G_prime)
+
+
+
         else:
             train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
             test_loss, test_accuracy = test_model(data, num_features, num_classes)
+        ########################### old version #################################
+
+        # if not args.apply_attack:
+        #     train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
+
+        # test_loss, test_accuracy = test_model(data, num_features, num_classes)
+
+        # test_loss_under_pgd_attack, test_accuracy_under_pgd_attack = test_model_under_pgd_attack(model, data, test_nodes = labels, criterion = criterion, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type)
+
+        # print(f"Normal Test Loss: {test_loss}, Normal Test Accuracy: {test_accuracy}")
+        # print(f"Test Loss under attack: {test_loss_under_pgd_attack}, Test Accuracy under attack: {test_accuracy_under_pgd_attack}")
+
 
 
     elif args.dataset_type == 'graph':
@@ -123,7 +146,7 @@ def main():
     print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
     # Save results to log
-    with open(f'{args.dataset_name}_testing_result.log', 'w') as log_file:
+    with open(f'logs/{args.dataset_name}_testing_result.log', 'w') as log_file:
         log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
 if __name__ == "__main__":

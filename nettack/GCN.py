@@ -3,15 +3,15 @@ from tensorflow.contrib import slim
 import numpy as np
 from sklearn.metrics import f1_score
 
-spdot = tf.sparse_tensor_dense_matmul
+spdot = tf.sparse.sparse_dense_matmul
 dot = tf.matmul
 
 def sparse_dropout(x, keep_prob, noise_shape):
     """Dropout for sparse tensors."""
     random_tensor = keep_prob
-    random_tensor += tf.random_uniform(noise_shape)
+    random_tensor += tf.random.uniform(noise_shape)
     dropout_mask = tf.cast(tf.floor(random_tensor), dtype=tf.bool)
-    pre_out = tf.sparse_retain(x, dropout_mask)
+    pre_out = tf.sparse.retain(x, dropout_mask)
     return pre_out * (1./keep_prob)
 
 class GCN:
@@ -57,7 +57,8 @@ class GCN:
 
         with self.graph.as_default():
 
-            with tf.variable_scope(name) as scope:
+            # with tf.variable_scope(name) as scope:
+            with tf.compat.v1.variable_scope(name) as scoop:
                 w_init = slim.xavier_initializer
                 self.name = name
                 self.n_classes = sizes[1]
@@ -71,11 +72,11 @@ class GCN:
                 self.weight_decay = params_dict['weight_decay'] if 'weight_decay' in params_dict else 5e-4
                 self.N, self.D = X_obs.shape
 
-                self.node_ids = tf.placeholder(tf.int32, [None], 'node_ids')
-                self.node_labels = tf.placeholder(tf.int32, [None, sizes[1]], 'node_labels')
+                self.node_ids = tf.compat.v1.placeholder(tf.int32, [None], 'node_ids')
+                self.node_labels = tf.compat.v1.placeholder(tf.int32, [None, sizes[1]], 'node_labels')
 
                 # bool placeholder to turn on dropout during training
-                self.training = tf.placeholder_with_default(False, shape=())
+                self.training = tf.compat.v1.placeholder_with_default(False, shape=())
 
                 self.An = tf.SparseTensor(np.array(An.nonzero()).T, An[An.nonzero()].A1, An.shape)
                 self.An = tf.cast(self.An, tf.float32)
@@ -123,22 +124,22 @@ class GCN:
                 var_l = [self.W1, self.W2]
                 if with_relu:
                     var_l.extend([self.b1, self.b2])
-                self.train_op = tf.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
+                self.train_op = tf.compat.v1.train.AdamOptimizer(learning_rate=self.learning_rate).minimize(self.loss,
                                                                                                   var_list=var_l)
 
-                self.varlist = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
-                self.local_init_op = tf.variables_initializer(self.varlist)
+                self.varlist = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+                self.local_init_op = tf.compat.v1.variables_initializer(self.varlist)
 
                 if gpu_id is None:
-                    config = tf.ConfigProto(
+                    config = tf.compat.v1.ConfigProto(
                         device_count={'GPU': 0}
                     )
                 else:
                     gpu_options = tf.GPUOptions(visible_device_list='{}'.format(gpu_id), allow_growth=True)
                     config = tf.ConfigProto(gpu_options=gpu_options)
 
-                self.session = tf.InteractiveSession(config=config)
-                self.init_op = tf.global_variables_initializer()
+                self.session = tf.compat.v1.InteractiveSession(config=config)
+                self.init_op = tf.compat.v1.global_variables_initializer()
                 self.session.run(self.init_op)
 
     def convert_varname(self, vname, to_namespace=None):
@@ -179,8 +180,8 @@ class GCN:
 
         with self.graph.as_default():
             if not hasattr(self, 'assign_placeholders'):
-                self.assign_placeholders = {v.name: tf.placeholder(v.dtype, shape=v.get_shape()) for v in self.varlist}
-                self.assign_ops = {v.name: tf.assign(v, self.assign_placeholders[v.name])
+                self.assign_placeholders = {v.name: tf.compat.v1.placeholder(v.dtype, shape=v.get_shape()) for v in self.varlist}
+                self.assign_ops = {v.name: tf.compat.v1.assign(v, self.assign_placeholders[v.name])
                                    for v in self.varlist}
             to_namespace = list(var_dict.keys())[0].split("/")[0]
             self.session.run(list(self.assign_ops.values()), feed_dict = {val: var_dict[self.convert_varname(key, to_namespace)]
