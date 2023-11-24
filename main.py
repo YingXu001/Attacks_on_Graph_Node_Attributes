@@ -6,7 +6,7 @@ import json
 import logging
 import numpy as np
 from train import train_model
-from test import test_model, test_model_under_pgd_attack
+from test import test_model
 from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
@@ -93,19 +93,20 @@ def main():
         # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
             data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type, criterion=criterion, labels=labels)
+            train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
 
-        elif args.apply_attack and args.attack_type == 'poisoning':
-            # Assuming G is your original graph
-            G_prime = add_random_noise(G, epsilon=0.01)  # Customize epsilon as needed
-
-            # Assuming you have a function to convert G_prime to PyTorch Geometric Data
-            data = convert_to_torch_geometric_data(G_prime)
-
-
+            # Test the model under attack
+            test_loss, test_accuracy = test_model(trained_model, data, criterion)
 
         else:
-            train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
-            test_loss, test_accuracy = test_model(data, num_features, num_classes)
+            # Normal training without attack
+            train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
+
+            # Normal testing
+            test_loss, test_accuracy = test_model(trained_model, data, criterion)
+
+            # Print test results
+            print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
         ########################### old version #################################
 
         # if not args.apply_attack:
@@ -145,9 +146,9 @@ def main():
 
     print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
-    # Save results to log
-    with open(f'logs/{args.dataset_name}_testing_result.log', 'w') as log_file:
-        log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+    # # Save results to log
+    # with open(f'logs/{args.dataset_name}_testing_result.log', 'w') as log_file:
+    #     log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
 if __name__ == "__main__":
     main()

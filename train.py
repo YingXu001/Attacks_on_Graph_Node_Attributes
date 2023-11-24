@@ -4,12 +4,13 @@ from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 from sklearn.metrics import accuracy_score
 from model import GCN
+from AttackGraph.PGD import pgd_attack
 
 # Check if the model directory exists, create it if not
 model_dir = 'model'
 os.makedirs(model_dir, exist_ok=True)
 
-def train_model(data, num_features, num_classes, lr, patience, epochs):
+def train_model(data, num_features, num_classes, lr, patience, epochs, criterion, apply_attack=False, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
     # model = GCN(dataset.num_features, dataset.num_classes)
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
@@ -34,8 +35,13 @@ def train_model(data, num_features, num_classes, lr, patience, epochs):
     for epoch in range(epochs):
         model.train()
         optimizer.zero_grad()
-
-        out = model(data)
+        
+        # Apply PGD attack if specified
+        if apply_attack:
+            attacked_data = pgd_attack(model, data, epsilon, alpha, num_iter, norm_type, criterion, train_labels)
+            out = model(attacked_data)
+        else:
+            out = model(data)
 
         loss = criterion(out[train_nodes], train_labels)
         train_losses.append(loss.item())
@@ -71,4 +77,4 @@ def train_model(data, num_features, num_classes, lr, patience, epochs):
                 break
 
     # You might also want to return or store the training statistics like losses and accuracies
-    return train_losses, val_losses, val_accuracies
+    return train_losses, val_losses, val_accuracies, model
