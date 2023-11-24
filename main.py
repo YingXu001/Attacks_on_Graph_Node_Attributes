@@ -97,16 +97,18 @@ def main():
 
             # Test the model under attack
             test_loss, test_accuracy = test_model(trained_model, data, criterion)
-
+        elif args.apply_attack and args.attack_type == 'poisoning':
+            pass
+        
         else:
-            # Normal training without attack
-            train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
+            # train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
+            train_losses, val_losses, val_accuracies, trained_model = train_model(
+                data, num_features, num_classes, args.lr, args.patience, args.epochs
+            )
 
-            # Normal testing
-            test_loss, test_accuracy = test_model(trained_model, data, criterion)
+            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/best_model.pth')
 
-            # Print test results
-            print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+        '''        
         ########################### old version #################################
 
         # if not args.apply_attack:
@@ -118,7 +120,7 @@ def main():
 
         # print(f"Normal Test Loss: {test_loss}, Normal Test Accuracy: {test_accuracy}")
         # print(f"Test Loss under attack: {test_loss_under_pgd_attack}, Test Accuracy under attack: {test_accuracy_under_pgd_attack}")
-
+        '''    
 
 
     elif args.dataset_type == 'graph':
@@ -129,11 +131,12 @@ def main():
         num_classes = dataset.num_classes
 
         # Apply attack if specified
-        if args.apply_attack and args.attack_type == 'decision_time':
-            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=500, norm_type=args.norm_type, criterion=criterion, labels=labels)
+        # if args.apply_attack and args.attack_type == 'decision_time':
+        #     data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=500, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
-        # Train the model
-        train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
+        train_losses, val_losses, val_accuracies, trained_model = train_model(
+            data, num_features, num_classes, args.lr, args.patience, args.epochs
+        )
 
         plot_losses(train_losses, val_losses, args.dataset_name)
         plot_accuracies(val_accuracies, args.dataset_name)
@@ -146,9 +149,9 @@ def main():
 
     print(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
-    # # Save results to log
-    # with open(f'logs/{args.dataset_name}_testing_result.log', 'w') as log_file:
-    #     log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
+    # Save results to log
+    with open(f'logs/{args.dataset_name}_testing_result.log', 'w') as log_file:
+        log_file.write(f'Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n')
 
 if __name__ == "__main__":
     main()

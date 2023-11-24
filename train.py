@@ -10,7 +10,7 @@ from AttackGraph.PGD import pgd_attack
 model_dir = 'model'
 os.makedirs(model_dir, exist_ok=True)
 
-def train_model(data, num_features, num_classes, lr, patience, epochs, criterion, apply_attack=False, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
+def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=500):
     # model = GCN(dataset.num_features, dataset.num_classes)
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
@@ -36,12 +36,7 @@ def train_model(data, num_features, num_classes, lr, patience, epochs, criterion
         model.train()
         optimizer.zero_grad()
         
-        # Apply PGD attack if specified
-        if apply_attack:
-            attacked_data = pgd_attack(model, data, epsilon, alpha, num_iter, norm_type, criterion, train_labels)
-            out = model(attacked_data)
-        else:
-            out = model(data)
+        out = model(data)
 
         loss = criterion(out[train_nodes], train_labels)
         train_losses.append(loss.item())
