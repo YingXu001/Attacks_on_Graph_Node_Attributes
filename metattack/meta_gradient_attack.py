@@ -347,8 +347,8 @@ class GNNMetaApprox(GNNAttack):
             epsilon = 1e-8
             if self.dtype == tf.float16:
                 epsilon = 1e-4  # improve numerical stability for half precision
-            # self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon)
-            self.optimizer = tf.optimizers.Adam(learning_rate=learning_rate, epsilon=epsilon)
+            self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon)
+            # self.optimizer = tf.optimizers.Adam(learning_rate=learning_rate, epsilon=epsilon)
             self.train_op = self.optimizer.minimize(self.classification_loss, var_list=[*self.all_weights[0],
                                                                                         *self.all_biases[0]])
 
@@ -393,7 +393,7 @@ class GNNMetaApprox(GNNAttack):
                                               tf.reshape(self.modified_adjacency, [-1]) * -2 + 1,
                                               name="Adj_gradient")
             # Add the current gradient to the sum.
-            self.grad_sum_add = tf.assign_add(self.grad_sum, self.adjacency_grad)
+            self.grad_sum_add = tf.compat.v1.assign_add(self.grad_sum, self.adjacency_grad)
 
             # Make sure that the minimum entry is 0.
             self.grad_sum_mod = self.grad_sum - tf.reduce_min(self.grad_sum)
