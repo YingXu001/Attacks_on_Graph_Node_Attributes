@@ -4,7 +4,7 @@ from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 from sklearn.metrics import accuracy_score
 from model import GCN
-from AttackGraph.PGD import pgd_attack
+from AttackGraph.PGD import pgd_attack, pgd_top_k_node_attack
 
 # Check if the model directory exists, create it if not
 model_dir = 'model'
@@ -73,7 +73,7 @@ def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=50
     return train_losses, val_losses, val_accuracies, model
 
 
-def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=10, epsilon=0.1, alpha=0.01, num_iter=1, norm_type='Linf'):
+def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=100, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss()
@@ -143,3 +143,27 @@ def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=10, e
 
 #     return model
 
+
+def train_with_pgd_top_k_node_attack(data, num_features, num_classes, lr=0.01, epochs=100, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf', k=10):
+    model = GCN(num_features, num_classes)
+    optimizer = Adam(model.parameters(), lr=lr)
+    criterion = CrossEntropyLoss()
+
+    train_nodes = torch.where(data.train_mask)[0]
+
+    for epoch in range(epochs):
+        model.train()
+        optimizer.zero_grad()
+
+        # Apply PGD attack on the entire graph during training
+        perturbed_data = pgd_top_k_node_attack(model, data.clone(), epsilon, alpha, num_iter, norm_type, criterion, data.y, k)
+
+        out = model(perturbed_data)
+        loss = criterion(out[train_nodes], perturbed_data.y[train_nodes])
+        loss.backward()
+        optimizer.step()
+
+    # Save the final model
+    torch.save(model.state_dict(), 'model/pgd_model.pth')
+
+    return model

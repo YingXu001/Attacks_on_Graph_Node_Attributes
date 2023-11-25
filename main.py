@@ -5,8 +5,8 @@ import random
 import json
 import logging
 import numpy as np
-from train import train_model, train_with_pgd_attack
-from test import test_model, test_with_pgd_attack
+from train import train_model, train_with_pgd_attack, train_with_pgd_top_k_node_attack
+from test import test_model, test_with_pgd_attack, test_with_pgd_top_k_node_attack
 from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--norm_type', type=str, default='Linf', choices=['Linf', 'L2', 'L1'], help='Type of norm for PGD attack')
     parser.add_argument('--apply_attack', action='store_true', help='Apply an attack during training')
-    parser.add_argument('--attack_type', type=str, default='decision_time', choices=['decision_time', 'poisoning'], help='Type of attack to apply')
+    parser.add_argument('--attack_type', type=str, default='decision_time', choices=['decision_time', 'decision_time_K', 'poisoning'], help='Type of attack to apply')
     return parser.parse_args()
 
 def main():
@@ -95,25 +95,28 @@ def main():
                 data, num_features, num_classes, args.lr, args.epochs,
                 epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
-            # model, train_accuracies, val_accuracies = train_with_pgd_attack(
-            #     data, num_features, num_classes, args.lr, args.patience, args.epochs,
-            #     epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
-            # )
+
             test_loss, test_accuracy = test_with_pgd_attack(
                 data, num_features, num_classes, model_path='model/pgd_model.pth',
                 epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
-            # print("Training Accuracies:", train_accuracies)
-            # print("Validation Accuracies:", val_accuracies)
-            # print("Test Loss:", test_loss, "Test Accuracy:", test_accuracy)
+        elif args.apply_attack and args.attack_type == 'decision_time_K':
+            # Using PGD attack during training
+            model = train_with_pgd_top_k_node_attack(
+                data, num_features, num_classes, args.lr, args.epochs,
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=10
+            )
 
+            test_loss, test_accuracy = test_with_pgd_top_k_node_attack(
+                data, num_features, num_classes, model_path='model/pgd_model.pth',
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=10
+            )
 
         elif args.apply_attack and args.attack_type == 'poisoning':
             pass
         
         else:
-            # train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
             train_losses, val_losses, val_accuracies, trained_model = train_model(
                 data, num_features, num_classes, args.lr, args.patience, args.epochs
             )
