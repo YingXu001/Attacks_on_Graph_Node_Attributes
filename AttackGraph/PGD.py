@@ -16,7 +16,8 @@ def pgd_attack(model, data, epsilon, alpha, num_iter, norm_type, criterion, labe
     Returns:
         The perturbed graph data.
     """
-    print("!!!attack begin!!!")
+    
+    # print("!!!attack begin!!!")
 
     # Get node features and clone them to get a starting point for perturbations
     original_node_features = data.x.clone().detach()
@@ -25,6 +26,7 @@ def pgd_attack(model, data, epsilon, alpha, num_iter, norm_type, criterion, labe
         data.x.requires_grad = True
         model.zero_grad()
         out = model(data)
+        # print("Output shape in PGD attack:", out.shape)
 
         loss = criterion(out, labels)
         loss.backward()

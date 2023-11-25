@@ -5,8 +5,8 @@ import random
 import json
 import logging
 import numpy as np
-from train import train_model
-from test import test_model
+from train import train_model, train_with_pgd_attack
+from test import test_model, test_with_pgd_attack
 from data_loader import load_data, filter_and_save_hellaswag
 from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
@@ -89,14 +89,26 @@ def main():
         train_nodes = torch.where(data.train_mask)[0]
         train_labels = data.y[train_nodes]
 
-        ########################### old version #################################
-        # Apply attack if specified
         if args.apply_attack and args.attack_type == 'decision_time':
-            data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type, criterion=criterion, labels=labels)
-            train_losses, val_losses, val_accuracies, trained_model = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs, criterion)
+            # Using PGD attack during training
+            model = train_with_pgd_attack(
+                data, num_features, num_classes, args.lr, args.epochs,
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+            )
+            # model, train_accuracies, val_accuracies = train_with_pgd_attack(
+            #     data, num_features, num_classes, args.lr, args.patience, args.epochs,
+            #     epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+            # )
+            test_loss, test_accuracy = test_with_pgd_attack(
+                data, num_features, num_classes, model_path='model/pgd_model.pth',
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+            )
 
-            # Test the model under attack
-            test_loss, test_accuracy = test_model(trained_model, data, criterion)
+            # print("Training Accuracies:", train_accuracies)
+            # print("Validation Accuracies:", val_accuracies)
+            # print("Test Loss:", test_loss, "Test Accuracy:", test_accuracy)
+
+
         elif args.apply_attack and args.attack_type == 'poisoning':
             pass
         
@@ -107,21 +119,6 @@ def main():
             )
 
             test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/best_model.pth')
-
-        '''        
-        ########################### old version #################################
-
-        # if not args.apply_attack:
-        #     train_losses, val_losses, val_accuracies = train_model(data, num_features, num_classes, args.lr, args.patience, args.epochs)
-
-        # test_loss, test_accuracy = test_model(data, num_features, num_classes)
-
-        # test_loss_under_pgd_attack, test_accuracy_under_pgd_attack = test_model_under_pgd_attack(model, data, test_nodes = labels, criterion = criterion, epsilon=0.1, alpha=0.01, num_iter=200, norm_type=args.norm_type)
-
-        # print(f"Normal Test Loss: {test_loss}, Normal Test Accuracy: {test_accuracy}")
-        # print(f"Test Loss under attack: {test_loss_under_pgd_attack}, Test Accuracy under attack: {test_accuracy_under_pgd_attack}")
-        '''    
-
 
     elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
