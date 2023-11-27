@@ -91,7 +91,7 @@ def pgd_top_k_node_attack(model, data, epsilon, alpha, num_iter, norm_type, crit
         out = model(data)
 
         attack_output = out[nodes_to_attack]
-        attack_labels = labels[nodes_to_attack]
+        attack_labels = labels[top_k_test_nodes]
         loss = criterion(attack_output, attack_labels)
         # loss = criterion(out, labels)
         loss.backward()

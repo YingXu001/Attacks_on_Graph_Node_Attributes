@@ -93,24 +93,24 @@ def main():
         if args.apply_attack and args.attack_type == 'decision_time':
             # Using PGD attack during training
             model = train_with_pgd_attack(
-                data, num_features, num_classes, args.lr, args.epochs,
+                data, num_features, num_classes, args.dataset_name, args.lr, args.epochs,
                 epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
-
+            model_path = f'model/{args.dataset_name}_pgd_model.pth'
             test_loss, test_accuracy = test_with_pgd_attack(
-                data, num_features, num_classes, model_path='model/pgd_model.pth',
+                data, num_features, num_classes, model_path=model_path,
                 epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
         elif args.apply_attack and args.attack_type == 'decision_time_K':
             # Using PGD attack during training
             model = train_with_pgd_top_k_node_attack(
-                data, num_features, num_classes, args.lr, args.epochs,
+                data, num_features, num_classes, args.dataset_name, args.lr, args.epochs,
                 epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=args.K
             )
-
+            model_path = f'model/{args.dataset_name}_pgd_k_model.pth'
             test_loss, test_accuracy = test_with_pgd_top_k_node_attack(
-                data, num_features, num_classes, model_path='model/pgd_model.pth',
+                data, num_features, num_classes, model_path=model_path,
                 epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=10
             )
 
@@ -119,10 +119,10 @@ def main():
         
         else:
             train_losses, val_losses, val_accuracies, trained_model = train_model(
-                data, num_features, num_classes, args.lr, args.patience, args.epochs
+                data, num_features, num_classes, args.dataset_name, args.lr, args.patience, args.epochs
             )
-
-            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/best_model.pth')
+            model_path = f'model/{args.dataset_name}_best_model.pth'
+            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path=model_path)
 
     elif args.dataset_type == 'graph':
         data, dataset = load_data(dataset_type='graph', dataset_name=args.dataset_name)
@@ -134,7 +134,7 @@ def main():
         if args.apply_attack and args.attack_type == 'decision_time':
             # Using PGD attack during training
             model = train_with_pgd_attack(
-                data, num_features, num_classes, args.lr, args.epochs,
+                data, num_features, num_classes, args.dataset_name, args.lr, args.epochs,
                 epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
@@ -145,10 +145,12 @@ def main():
 
         else:
             train_losses, val_losses, val_accuracies, trained_model = train_model(
-                data, num_features, num_classes, args.lr, args.patience, args.epochs
+                data, num_features, num_classes, args.dataset_name, args.lr, args.patience, args.epochs
             )
+            model_path = f'model/{args.dataset_name}_best_model.pth'
+            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path=model_path)
 
-            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/{args.dataset_name}_best_model.pth')
+            # test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/{args.dataset_name}_best_model.pth')
         # Apply attack if specified
         # if args.apply_attack and args.attack_type == 'decision_time':
         #     data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=500, norm_type=args.norm_type, criterion=criterion, labels=labels)
@@ -157,8 +159,8 @@ def main():
         #     data, num_features, num_classes, args.lr, args.patience, args.epochs
         # )
 
-        plot_losses(train_losses, val_losses, args.dataset_name)
-        plot_accuracies(val_accuracies, args.dataset_name)
+        # plot_losses(train_losses, val_losses, args.dataset_name)
+        # plot_accuracies(val_accuracies, args.dataset_name)
 
         # Testing phase
         test_loss, test_accuracy = test_model(data, num_features, num_classes)

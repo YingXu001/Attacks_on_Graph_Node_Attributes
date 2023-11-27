@@ -10,7 +10,7 @@ from AttackGraph.PGD import pgd_attack, pgd_top_k_node_attack
 model_dir = 'model'
 os.makedirs(model_dir, exist_ok=True)
 
-def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=500):
+def train_model(data, num_features, num_classes, dataset_name, lr=0.01, patience=40, epochs=500):        
     # model = GCN(dataset.num_features, dataset.num_classes)
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
@@ -60,7 +60,7 @@ def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=50
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             counter = 0
-            model_path = os.path.join(model_dir, 'best_model.pth')
+            model_path = os.path.join(model_dir, f'{dataset_name}_best_model.pth')
             torch.save(model.state_dict(), model_path)
         else:
             counter += 1
@@ -73,7 +73,7 @@ def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=50
     return train_losses, val_losses, val_accuracies, model
 
 
-def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=200, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
+def train_with_pgd_attack(data, num_features, num_classes, dataset_name, lr=0.01, epochs=200, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss()
@@ -93,7 +93,8 @@ def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=200, 
         optimizer.step()
 
     # Save the final model
-    torch.save(model.state_dict(), 'model/pgd_model.pth')
+    model_path = os.path.join(model_dir, f'{dataset_name}_pgd_model.pth')
+    torch.save(model.state_dict(), model_path)
 
     return model
 
@@ -144,7 +145,7 @@ def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=200, 
 #     return model
 
 
-def train_with_pgd_top_k_node_attack(data, num_features, num_classes, lr=0.01, epochs=100, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf', k=10):
+def train_with_pgd_top_k_node_attack(data, num_features, num_classes, dataset_name, lr=0.01, epochs=100, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf', k=10):
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss()
@@ -164,6 +165,7 @@ def train_with_pgd_top_k_node_attack(data, num_features, num_classes, lr=0.01, e
         optimizer.step()
 
     # Save the final model
-    torch.save(model.state_dict(), 'model/pgd_model.pth')
+    model_path = os.path.join(model_dir, f'{dataset_name}_pgd_k_model.pth')
+    torch.save(model.state_dict(), model_path)
 
     return model
