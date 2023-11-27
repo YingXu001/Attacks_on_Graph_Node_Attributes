@@ -13,7 +13,7 @@ from BERT_feature_extraction import initialize_bert, extract_embeddings
 from graph_operations import create_graph, visualize_graph, save_graph_data, load_graph_data
 from AttackGraph.PGD import pgd_attack
 from AttackGraph.AddRandomNoise import add_random_noise
-from model import GCN
+from model import GCN, GAT
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -34,6 +34,7 @@ def parse_args():
     parser.add_argument('--apply_attack', action='store_true', help='Apply an attack during training')
     parser.add_argument('--attack_type', type=str, default='decision_time', choices=['decision_time', 'decision_time_K', 'poisoning'], help='Type of attack to apply')
     parser.add_argument('--K', type=int, default='10', help='Top K degree nodes')
+    parser.add_argument('--model', type=str, default='GCN', choices=['GCN', 'GAT'], help='Graph Neural Network Model Selection')
     return parser.parse_args()
 
 def main():
@@ -82,7 +83,13 @@ def main():
         # Initialize model
         num_features = data.num_node_features
         num_classes = len(torch.unique(data.y))
-        model = GCN(num_features, num_classes)
+        # model = GCN(num_features, num_classes)
+        if args.model == 'GCN':
+            model = GCN(num_features, num_classes)
+        elif args.model == 'GAT':
+            model = GAT(num_features, num_classes)
+        else:
+            raise ValueError("Unsupported model type")
         criterion = torch.nn.CrossEntropyLoss()
 
         labels = data.y
@@ -131,6 +138,13 @@ def main():
         num_features = dataset.num_features
         num_classes = dataset.num_classes
 
+        if args.model == 'GCN':
+            model = GCN(num_features, num_classes)
+        elif args.model == 'GAT':
+            model = GAT(num_features, num_classes)
+        else:
+            raise ValueError("Unsupported model type")
+
         if args.apply_attack and args.attack_type == 'decision_time':
             # Using PGD attack during training
             model = train_with_pgd_attack(
@@ -163,7 +177,7 @@ def main():
         # plot_accuracies(val_accuracies, args.dataset_name)
 
         # Testing phase
-        test_loss, test_accuracy = test_model(data, num_features, num_classes)
+        # test_loss, test_accuracy = test_model(data, num_features, num_classes)
 
     else:
         raise ValueError("Invalid dataset type specified")
