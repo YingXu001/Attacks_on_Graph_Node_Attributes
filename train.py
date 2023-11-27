@@ -73,7 +73,7 @@ def train_model(data, num_features, num_classes, lr=0.01, patience=40, epochs=50
     return train_losses, val_losses, val_accuracies, model
 
 
-def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=100, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
+def train_with_pgd_attack(data, num_features, num_classes, lr=0.01, epochs=200, epsilon=0.1, alpha=0.01, num_iter=10, norm_type='Linf'):
     model = GCN(num_features, num_classes)
     optimizer = Adam(model.parameters(), lr=lr)
     criterion = CrossEntropyLoss()

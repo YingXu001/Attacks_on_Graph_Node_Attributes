@@ -33,6 +33,7 @@ def parse_args():
     parser.add_argument('--norm_type', type=str, default='Linf', choices=['Linf', 'L2', 'L1'], help='Type of norm for PGD attack')
     parser.add_argument('--apply_attack', action='store_true', help='Apply an attack during training')
     parser.add_argument('--attack_type', type=str, default='decision_time', choices=['decision_time', 'decision_time_K', 'poisoning'], help='Type of attack to apply')
+    parser.add_argument('--K', type=int, default='10', help='Top K degree nodes')
     return parser.parse_args()
 
 def main():
@@ -93,19 +94,19 @@ def main():
             # Using PGD attack during training
             model = train_with_pgd_attack(
                 data, num_features, num_classes, args.lr, args.epochs,
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
             test_loss, test_accuracy = test_with_pgd_attack(
                 data, num_features, num_classes, model_path='model/pgd_model.pth',
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
         elif args.apply_attack and args.attack_type == 'decision_time_K':
             # Using PGD attack during training
             model = train_with_pgd_top_k_node_attack(
                 data, num_features, num_classes, args.lr, args.epochs,
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=10
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=args.K
             )
 
             test_loss, test_accuracy = test_with_pgd_top_k_node_attack(
@@ -130,13 +131,31 @@ def main():
         num_features = dataset.num_features
         num_classes = dataset.num_classes
 
+        if args.apply_attack and args.attack_type == 'decision_time':
+            # Using PGD attack during training
+            model = train_with_pgd_attack(
+                data, num_features, num_classes, args.lr, args.epochs,
+                epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
+            )
+
+            test_loss, test_accuracy = test_with_pgd_attack(
+                data, num_features, num_classes, model_path='model/pgd_model.pth',
+                epsilon=0.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
+            )
+
+        else:
+            train_losses, val_losses, val_accuracies, trained_model = train_model(
+                data, num_features, num_classes, args.lr, args.patience, args.epochs
+            )
+
+            test_loss, test_accuracy = test_model(data, num_features, num_classes, model_path='model/{args.dataset_name}_best_model.pth')
         # Apply attack if specified
         # if args.apply_attack and args.attack_type == 'decision_time':
         #     data = pgd_attack(model, data, epsilon=0.1, alpha=0.01, num_iter=500, norm_type=args.norm_type, criterion=criterion, labels=labels)
 
-        train_losses, val_losses, val_accuracies, trained_model = train_model(
-            data, num_features, num_classes, args.lr, args.patience, args.epochs
-        )
+        # train_losses, val_losses, val_accuracies, trained_model = train_model(
+        #     data, num_features, num_classes, args.lr, args.patience, args.epochs
+        # )
 
         plot_losses(train_losses, val_losses, args.dataset_name)
         plot_accuracies(val_accuracies, args.dataset_name)
