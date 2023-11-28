@@ -23,7 +23,7 @@ def set_seed(seed):
 def parse_args():
     parser = argparse.ArgumentParser(description="GCN for different datasets")
     parser.add_argument('--dataset_type', type=str, required=True, choices=['graph', 'text'], help='Type of the dataset (graph or text)')
-    parser.add_argument('--dataset_name', type=str, help='Name of the graph dataset (e.g., Cora, Reddit)')
+    parser.add_argument('--dataset_name', type=str, help='Name of the graph dataset (e.g., Cora, Reddit, CiteSeer)')
     parser.add_argument('--file_path', type=str, default='data/combined_hellaswag.json', help='File path for the text dataset')
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--patience', type=int, default=40, help='Patience for early stopping')

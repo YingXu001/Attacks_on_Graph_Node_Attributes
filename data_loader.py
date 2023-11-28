@@ -1,11 +1,14 @@
 import json
 from torch_geometric.datasets import Planetoid, Reddit
+from torch_geometric.transforms import NormalizeFeatures
 
 def load_graph_data(dataset_name):
     if dataset_name == 'Cora':
-        dataset = Planetoid(root='/tmp/Cora', name='Cora')
+        dataset = Planetoid(root='/tmp/Cora', name='Cora', transform=NormalizeFeatures())
     elif dataset_name == 'Reddit':
-        dataset = Reddit(root='/tmp/Reddit')
+        dataset = Reddit(root='/tmp/Reddit', transform=NormalizeFeatures())
+    elif dataset_name == 'CiteSeer':
+        dataset = Planetoid(root='/tmp/CiteSeer', name='CiteSeer', transform=NormalizeFeatures())
     else:
         raise ValueError(f"Unsupported graph dataset: {dataset_name}")
     data = dataset[0]
