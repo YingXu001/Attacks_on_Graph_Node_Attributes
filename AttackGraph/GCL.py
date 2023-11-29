@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn.functional as F
 
+
 def save_to_file(output_string, file_name="graph_result/results.txt"):
     with open(file_name, "a") as f:  # "a" means append mode
         f.write(output_string + "\n")
@@ -41,6 +42,7 @@ class GCN(torch.nn.Module):
         x = self.conv3(x, edge_index)
 
         return x
+
 
 # 1. Mark all nodes as node_star for adversarial perturbation
 data.x.requires_grad = True
@@ -124,6 +126,82 @@ def train_and_validate(data, is_poisoned):
             
     return val_accuracies, test_accuracies
 
+
 # Part 1: Using the original node_star features
 model_original = GCN()
-val_accuracies_pure, test_accuracies_pure = train_and_validate(data, is
+val_accuracies_pure, test_accuracies_pure = train_and_validate(data, is_poisoned=False)
+# print("Pure Dataset Accuracies:", val_accuracies_pure)
+save_to_file("Pure Dataset Accuracies:" + str(test_accuracies_pure))
+
+
+
+# Adversarial modification of node_star
+# 2. Use the initial attributes (embeddings) of nodes to calculate similarity
+data.x = torch.nn.Parameter(data.x.detach().clone())
+optimizer_poison = Adam([data.x], lr=0.01)
+lambda1 = 5
+lambda2 = 20
+
+for epoch in range(25):
+    optimizer_poison.zero_grad()
+
+    # Separate embeddings of node* and other nodes
+    emb_star = data.x[node_star_tensor]
+    emb_node = data.x[~node_star_tensor]
+
+    # Calculate cosine similarity
+    similarity_matrix_star = F.cosine_similarity(emb_star.unsqueeze(0), emb_star.unsqueeze(1), dim=2)
+    similarity_matrix_cross = F.cosine_similarity(emb_star.unsqueeze(0), emb_node.unsqueeze(1), dim=2)
+
+    # Modify loss function to optimize objectives
+    L_sim = torch.mean(similarity_matrix_star)  # Maximizing dissimilarity among star nodes
+    L_dis = -torch.mean(torch.log(torch.exp(similarity_matrix_cross)))  # Maximizing similarity between star nodes and other nodes
+
+    total_loss = lambda1 * L_sim + lambda2 * L_dis
+
+    total_loss.backward()
+    optimizer_poison.step()
+
+changed_embeddings = data.x.detach().clone()
+# print(torch.norm(original_embeddings - changed_embeddings))
+# save_to_file(str(torch.norm(original_embeddings - changed_embeddings)))
+
+# Part 2: Using the modified node_star features
+model_poisoned = GCN()
+
+val_accuracies_star, test_accuracies_star = train_and_validate(data, is_poisoned=True)
+save_to_file("Star Dataset Accuracies:" + str(val_accuracies_star))
+save_to_file("Star Dataset Test Accuracy:" + str(test_accuracies_star))
+
+# Save the weights of the poisoned model
+torch.save(model_poisoned.state_dict(), "poisoned_model.pth")
+
+# Load the model
+model_loaded = GCN()
+model_loaded.load_state_dict(torch.load("poisoned_model.pth"))
+model_loaded.eval()
+# After loading the model and inferring on the original graph, save the accuracy
+accuracy_on_original_with_poisoned_model = []
+
+# Infer using the loaded model on the original graph
+data.x = original_embeddings  # Restore to original embeddings
+with torch.no_grad():
+    out = model_loaded(data)
+    _, preds = torch.max(out[test_nodes], 1)
+    accuracy = accuracy_score(test_labels.cpu().numpy(), preds.cpu().numpy())
+    print("Accuracy on original graph with poisoned model:", accuracy)
+    accuracy_on_original_with_poisoned_model.append(accuracy)
+
+# Plot the validation accuracy of the poisoned data
+epochs = list(range(1, len(val_accuracies_star) + 1))
+plt.figure(figsize=(10, 6))
+plt.plot(epochs, val_accuracies_star, marker='o', label='Star Dataset (Validation)')
+plt.axhline(y=accuracy_on_original_with_poisoned_model[0], color='r', linestyle='-', label='Poisoned Model on Original Graph (Test)')
+
+plt.title('Accuracy of Poisoned Model on Different Datasets')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("graph_result/accuracy_comparison_with_poisoned_model.png")
