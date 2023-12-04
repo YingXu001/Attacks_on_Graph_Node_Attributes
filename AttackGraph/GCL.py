@@ -44,7 +44,7 @@ class GCN(torch.nn.Module):
         return x
 
 
-# 1. Mark all nodes as node_star for adversarial perturbation
+# Mark all nodes as node_star for adversarial perturbation
 data.x.requires_grad = True
 
 # Since all nodes are considered for perturbation, node_star_tensor is just a tensor of ones.
@@ -127,7 +127,6 @@ def train_and_validate(data, is_poisoned):
     return val_accuracies, test_accuracies
 
 
-# Part 1: Using the original node_star features
 model_original = GCN()
 val_accuracies_pure, test_accuracies_pure = train_and_validate(data, is_poisoned=False)
 # print("Pure Dataset Accuracies:", val_accuracies_pure)
