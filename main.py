@@ -118,7 +118,7 @@ def main():
             model_path = f'model/{args.dataset_name}_pgd_k_model.pth'
             test_loss, test_accuracy = test_with_pgd_top_k_node_attack(
                 data, num_features, num_classes, model_path=model_path,
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=10
+                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type, k=args.K
             )
 
         elif args.apply_attack and args.attack_type == 'poisoning':
@@ -149,13 +149,13 @@ def main():
             # Using PGD attack during training
             model = train_with_pgd_attack(
                 data, num_features, num_classes, args.dataset_name, args.lr, args.epochs,
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                epsilon=0.2, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
-            model_path = f'model/{args.dataset_name}_best_model.pth'
+            model_path = f'model/{args.dataset_name}_pgd_model.pth'
             test_loss, test_accuracy = test_with_pgd_attack(
                 data, num_features, num_classes, model_path=model_path,
-                epsilon=0.1, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                epsilon=0.2, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
         else:
