@@ -29,10 +29,12 @@ class GAT(torch.nn.Module):
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
         x = self.conv1(x, edge_index)
-        x = torch.nn.functional.relu(x)
+        # x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.leaky_relu(x)
         x = torch.nn.functional.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
-        x = torch.nn.functional.relu(x)
+        # x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.leaky_relu(x)
         x = torch.nn.functional.dropout(x, training=self.training)
         x = self.conv3(x, edge_index)
         return x

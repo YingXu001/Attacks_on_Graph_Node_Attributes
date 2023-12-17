@@ -148,14 +148,14 @@ def main():
         if args.apply_attack and args.attack_type == 'decision_time':
             # Using PGD attack during training
             model = train_with_pgd_attack(
-                data, num_features, num_classes, args.dataset_name, args.lr, args.epochs,
-                epsilon=0.2, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                data, num_features, num_classes, args.dataset_name, args.lr, args.epochs, 
+                epsilon=1.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
             model_path = f'model/{args.dataset_name}_pgd_model.pth'
             test_loss, test_accuracy = test_with_pgd_attack(
                 data, num_features, num_classes, model_path=model_path,
-                epsilon=0.2, alpha=0.01, num_iter=10, norm_type=args.norm_type
+                epsilon=1.0, alpha=0.01, num_iter=10, norm_type=args.norm_type
             )
 
         else:
