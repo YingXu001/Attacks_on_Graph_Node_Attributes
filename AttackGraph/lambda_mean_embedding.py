@@ -146,5 +146,3 @@ with torch.no_grad():
     _, preds = torch.max(out[test_nodes], 1)
     acc = accuracy_score(test_labels.cpu().numpy(), preds.cpu().numpy())
 print(f'Test Loss: {test_loss.item()}, Accuracy: {acc}')
-
-# Test Loss: 0.7318652272224426, Accuracy: 0.773
