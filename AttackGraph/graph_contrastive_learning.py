@@ -80,7 +80,7 @@ def train_and_validate(data, is_poisoned):
     val_accuracies = []
     test_accuracies = []
     
-    for epoch in range(400):
+    for epoch in range(1):
         if is_poisoned:
             model_poisoned.train()
             out = model_poisoned(data)
@@ -139,7 +139,7 @@ data.x = torch.nn.Parameter(data.x.detach().clone())
 optimizer_poison = Adam([data.x], lr=0.01)
 _lambda = 0.3
 
-for epoch in range(25):
+for epoch in range(1):
     optimizer_poison.zero_grad()
 
     emb_star = data.x[node_star_tensor]
@@ -186,7 +186,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(epochs, val_accuracies_star, marker='o', label='Star Dataset (Validation)')
 plt.axhline(y=accuracy_on_original_with_poisoned_model, color='r', linestyle='-', label='Poisoned Model on Original Graph (Test)')
 
-plt.title('Accuracy of Poisoned Model on Different Datasets')
+plt.title('Accuracy of Poisoned Model on Cora Dataset')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
 plt.legend()

@@ -1,30 +1,108 @@
+import numpy as np
+import scipy.sparse as sp
+import torch
+from torch.nn import CrossEntropyLoss
+from torch.optim import Adam
+from torch_geometric.nn import GCNConv, GATConv
+from torch_geometric.data import Data
 from torch_geometric.datasets import Planetoid
 from torch_geometric.transforms import NormalizeFeatures
-import torch
-from torch_geometric.datasets import Planetoid
-from torch.optim import Adam
-from torch.nn import CrossEntropyLoss
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
-dataset = Planetoid(root='/tmp/Cora', name='Cora', transform=NormalizeFeatures())
 
-data = dataset[0]
+class GCN(torch.nn.Module):
+    def __init__(self, num_features, num_classes):
+        super(GCN, self).__init__()
+        self.conv1 = GCNConv(num_features, 256)
+        self.conv2 = GCNConv(256, 32)
+        self.conv3 = GCNConv(32, num_classes)
 
-print(data)
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.dropout(x, training=self.training)
+        x = self.conv3(x, edge_index)
+        return x
+
+class GAT(torch.nn.Module):
+    def __init__(self, num_features, num_classes):
+        super(GAT, self).__init__()
+        self.conv1 = GATConv(num_features, 256)
+        self.conv2 = GATConv(256, 32)
+        self.conv3 = GATConv(32, num_classes)
+
+    def forward(self, data):
+        x, edge_index = data.x, data.edge_index
+        x = self.conv1(x, edge_index)
+        # x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.leaky_relu(x)
+        x = torch.nn.functional.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        # x = torch.nn.functional.relu(x)
+        x = torch.nn.functional.leaky_relu(x)
+        x = torch.nn.functional.dropout(x, training=self.training)
+        x = self.conv3(x, edge_index)
+        return x
 
 
-import torch
-from torch.optim import Adam
-from torch.nn import CrossEntropyLoss
+# dataset = Planetoid(root='/tmp/Cora', name='Cora', transform=NormalizeFeatures())
+# dataset = Planetoid(root='/tmp/Citeseer', name='Citeseer', transform=NormalizeFeatures())
 
-# Assuming you've already loaded your data somewhere above and it's called 'data'
-# Assuming you've defined or imported your model called 'model'
+# data = dataset[0]
+
+graph_file = '../data/mixed_graph.npz'
+
+# Load data
+data = np.load(graph_file, allow_pickle=True)
+print(f"Data is loaded, {data}")
+
+data = np.load('../data/mixed_graph.npz', allow_pickle=True)
+
+# Get adjacency matrix
+adj_data = data['adj_data']
+adj_indices = data['adj_indices']
+adj_indptr = data['adj_indptr']
+adj_shape = data['adj_shape']
+adj_matrix = sp.csr_matrix((adj_data, adj_indices, adj_indptr), shape=adj_shape)
+
+# Get attribute matrix
+attr_data = data['attr_data']
+attr_indices = data['attr_indices']
+attr_indptr = data['attr_indptr']
+attr_shape = data['attr_shape']
+attr_matrix = sp.csr_matrix((attr_data, attr_indices, attr_indptr), shape=attr_shape)
+
+# Get labels
+labels = data['labels']
+
+# Convert adjacency matrix to PyTorch tensor
+# edge_index = torch.tensor(np.array(np.where(adj_matrix.todense())), dtype=torch.long)
+edge_index = torch.tensor(np.vstack(adj_matrix.nonzero()), dtype=torch.long)
+
+# Convert attribute matrix to PyTorch tensor
+x = torch.tensor(attr_matrix.todense(), dtype=torch.float)
+
+# Create a PyTorch Geometric graph from the node features and the edge indices
+labels_tensor = torch.tensor(labels, dtype=torch.long)
+data = Data(x=x, edge_index=edge_index, y=labels_tensor)
+# data = Data(x=x, edge_index=edge_index)
+print(f"data: {data}")
+
+# model = GCN(num_features=3703, num_classes=6)  # Adjust num_classes as needed
+# model = GAT(num_features=1433, num_classes=7)
+model = GCN(num_features=768, num_classes=4)
 
 # Compute the mean of the node features
-mean_feature = torch.mean(data.x, dim=0)
+# mean_feature = torch.mean(data.x, dim=0)
+mean_feature = torch.mean(x, dim=0)
 
-lambda_param = 0.98
+
+lambda_param = 0.99
 
 # Assign the mean value to all nodes
 data.x = lambda_param * mean_feature + (1 - lambda_param) * data.x
@@ -35,7 +113,7 @@ optimizer = Adam(model.parameters(), lr=0.01)
 # Define the loss function
 criterion = CrossEntropyLoss()
 
-def split_data(num_nodes, train_ratio=0.8, val_ratio=0.1):
+def split_data(num_nodes, train_ratio=0.7, val_ratio=0.1):
     """
     Split nodes into training, validation and test sets.
     
