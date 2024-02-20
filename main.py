@@ -12,7 +12,7 @@ from plot import plot_losses, plot_accuracies
 from BERT_feature_extraction import initialize_bert, extract_embeddings
 from graph_operations import create_graph, visualize_graph, save_graph_data, load_graph_data
 from AttackGraph.PGD import pgd_attack
-from AttackGraph.AddRandomNoise import add_random_noise
+from AttackGraph.add_random_noise import add_random_noise
 from model import GCN, GAT
 
 def set_seed(seed):

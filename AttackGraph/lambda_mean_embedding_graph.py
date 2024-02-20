@@ -10,7 +10,6 @@ from torch_geometric.transforms import NormalizeFeatures
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
-
 class GCN(torch.nn.Module):
     def __init__(self, num_features, num_classes):
         super(GCN, self).__init__()
@@ -51,58 +50,19 @@ class GAT(torch.nn.Module):
 
 
 # dataset = Planetoid(root='/tmp/Cora', name='Cora', transform=NormalizeFeatures())
-# dataset = Planetoid(root='/tmp/Citeseer', name='Citeseer', transform=NormalizeFeatures())
+dataset = Planetoid(root='/tmp/Citeseer', name='Citeseer', transform=NormalizeFeatures())
 
-# data = dataset[0]
+data = dataset[0]
 
-graph_file = '../data/mixed_graph.npz'
-
-# Load data
-data = np.load(graph_file, allow_pickle=True)
 print(f"Data is loaded, {data}")
 
-data = np.load('../data/mixed_graph.npz', allow_pickle=True)
-
-# Get adjacency matrix
-adj_data = data['adj_data']
-adj_indices = data['adj_indices']
-adj_indptr = data['adj_indptr']
-adj_shape = data['adj_shape']
-adj_matrix = sp.csr_matrix((adj_data, adj_indices, adj_indptr), shape=adj_shape)
-
-# Get attribute matrix
-attr_data = data['attr_data']
-attr_indices = data['attr_indices']
-attr_indptr = data['attr_indptr']
-attr_shape = data['attr_shape']
-attr_matrix = sp.csr_matrix((attr_data, attr_indices, attr_indptr), shape=attr_shape)
-
-# Get labels
-labels = data['labels']
-
-# Convert adjacency matrix to PyTorch tensor
-# edge_index = torch.tensor(np.array(np.where(adj_matrix.todense())), dtype=torch.long)
-edge_index = torch.tensor(np.vstack(adj_matrix.nonzero()), dtype=torch.long)
-
-# Convert attribute matrix to PyTorch tensor
-x = torch.tensor(attr_matrix.todense(), dtype=torch.float)
-
-# Create a PyTorch Geometric graph from the node features and the edge indices
-labels_tensor = torch.tensor(labels, dtype=torch.long)
-data = Data(x=x, edge_index=edge_index, y=labels_tensor)
-# data = Data(x=x, edge_index=edge_index)
-print(f"data: {data}")
-
-# model = GCN(num_features=3703, num_classes=6)  # Adjust num_classes as needed
-# model = GAT(num_features=1433, num_classes=7)
-model = GCN(num_features=768, num_classes=4)
+model = GCN(num_features=1433, num_classes=7)
+model = GCN(num_features=3703, num_classes=6)
 
 # Compute the mean of the node features
-# mean_feature = torch.mean(data.x, dim=0)
-mean_feature = torch.mean(x, dim=0)
+mean_feature = torch.mean(data.x, dim=0)
 
-
-lambda_param = 0.99
+lambda_param = 0.98
 
 # Assign the mean value to all nodes
 data.x = lambda_param * mean_feature + (1 - lambda_param) * data.x
