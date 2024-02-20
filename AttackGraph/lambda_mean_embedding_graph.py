@@ -73,7 +73,7 @@ optimizer = Adam(model.parameters(), lr=0.01)
 # Define the loss function
 criterion = CrossEntropyLoss()
 
-def split_data(num_nodes, train_ratio=0.7, val_ratio=0.1):
+def split_data(num_nodes, train_ratio=0.8, val_ratio=0.1):
     """
     Split nodes into training, validation and test sets.
     
