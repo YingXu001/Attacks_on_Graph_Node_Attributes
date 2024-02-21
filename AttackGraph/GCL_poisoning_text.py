@@ -220,8 +220,6 @@ changed_embeddings = data.x.detach().clone()
 # save_to_file(str(torch.norm(original_embeddings - changed_embeddings)))
 
 
-# model_poisoned = GCN()
-# model_poisoned = GAT()
 # model_poisoned = GCN(num_features=num_features, num_classes=num_classes)
 model_poisoned = GAT(num_features=num_features, num_classes=num_classes)
 
@@ -231,8 +229,6 @@ save_to_file("Star Dataset Test Accuracy:" + str(test_accuracies_star))
 
 torch.save(model_poisoned.state_dict(), "poisoned_model.pth")
 
-# model_loaded = GCN()
-# model_loaded = GAT()
 # model_loaded = GCN(num_features=num_features, num_classes=num_classes)
 model_loaded = GAT(num_features=num_features, num_classes=num_classes)
 model_loaded.load_state_dict(torch.load("poisoned_model.pth"))

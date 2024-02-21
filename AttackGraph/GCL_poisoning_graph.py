@@ -157,7 +157,6 @@ def train_and_validate(data, is_poisoned):
 
 model_original = GCN()
 # model_original = GAT()
-# model_original = GCN(num_features=769, num_classes=4)
 val_accuracies_pure, test_accuracies_pure = train_and_validate(data, is_poisoned=False)
 # print("Pure Dataset Accuracies:", val_accuracies_pure)
 save_to_file("Pure Dataset Accuracies:" + str(test_accuracies_pure))
@@ -194,7 +193,6 @@ changed_embeddings = data.x.detach().clone()
 
 model_poisoned = GCN()
 # model_poisoned = GAT()
-# model_poisoned = GCN(num_features=769, num_classes=4)
 
 val_accuracies_star, test_accuracies_star = train_and_validate(data, is_poisoned=True)
 save_to_file("Star Dataset Accuracies:" + str(val_accuracies_star))
@@ -206,7 +204,6 @@ torch.save(model_poisoned.state_dict(), "poisoned_model.pth")
 
 model_loaded = GCN()
 # model_loaded = GAT()
-# model_loaded = GCN(num_features=769, num_classes=4)
 model_loaded.load_state_dict(torch.load("poisoned_model.pth"))
 model_loaded.eval()
 accuracy_on_original_with_poisoned_model = []
