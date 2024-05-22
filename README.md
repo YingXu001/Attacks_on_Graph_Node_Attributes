@@ -4,7 +4,7 @@
 Accepted by [AAAI AICS Workshop 2024](https://arxiv.org/abs/2402.12426)
 
 ## Pipeline
-![Pipeline Diagram](image/pipeline.png)
+![Pipeline Diagram](image/Pipeline.pdf)
 
 ## Abstract
 
