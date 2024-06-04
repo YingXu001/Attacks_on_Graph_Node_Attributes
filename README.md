@@ -3,7 +3,7 @@
 ## Paper Link
 Accepted by [AAAI AICS Workshop 2024](https://arxiv.org/abs/2402.12426)
 
-## Pipeline
+## Schematic Representation
 ![Pipeline Diagram](image/workflow.png)
 
 ## Abstract
